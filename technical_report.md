@@ -34,30 +34,68 @@ Tujuan dari sistem ini:
 
 ### Diagram Arsitektur Sistem
 
-    [ User (Browser) ]
-            |
-            v
-    [ Browser Extension ]
-      (Deteksi & Ambil URL)
-            |
-            v
-    [ Backend API (Flask) ]
-            |
-       --------------
-       |            |
-       v            v
-    [ Whitelist ]  [ ML Model ]
-     (Trusted)     (RandomForest)
-       |            |
-       ------+------
-              |
-              v
-    [ Result Processing ]
-       SAFE / PHISHING
-              |
-              v
-    [ Browser Popup ]
-     Warning / Continue
+┌─────────────────────────────────────────────────────────────────┐
+│                     USER / CLIENT LAYER                         │
+│  ┌──────────────────┐    ┌──────────────────────────────────┐  │
+│  │ Browser User     │    │ Desktop Application              │  │
+│  │ (Chrome/Firefox) │    │ (System Tray Monitor)            │  │
+│  └────────┬─────────┘    └──────────────┬───────────────────┘  │
+└───────────┼─────────────────────────────┼────────────────────────┘
+            │                             │
+            ▼                             ▼
+    ┌───────────────────────────────────────────────────┐
+    │      BROWSER EXTENSION LAYER                      │
+    │  ┌─────────────────────────────────────────────┐  │
+    │  │  background.js (Event Listener)             │  │
+    │  │  - Detect link clicks                       │  │
+    │  │  - Extract URL                             │  │
+    │  │  - Send to backend                         │  │
+    │  └────────────────┬────────────────────────────┘  │
+    │                   │                              │
+    │  ┌────────────────┴───────────┐                  │
+    │  │ popup.js (UI Display)      │                  │
+    │  │ - Show warning/safe        │                  │
+    │  │ - Continue/Block options   │                  │
+    │  └────────────────────────────┘                  │
+    └──────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────────┐
+        │  BACKEND API (Flask)             │
+        │  http://localhost:5001           │
+        │  ┌──────────────────────────┐    │
+        │  │ POST /api/check-url      │    │
+        │  │ {url: "..."}             │    │
+        │  └────────────┬─────────────┘    │
+        │               │                  │
+        │  ┌────────────┴──────────────┐   │
+        │  ▼                           ▼   │
+        │ Layer 1:              Layer 2:   │
+        │ Check Whitelist         ML Model │
+        │ (118 domains)           (V3)     │
+        │ ├─ YES → SAFE          Extract   │
+        │ │ 99%                   71 features
+        │ └─ NO ↓                          │
+        │    Run Model 1           ├─ Phishing
+        │    → PHISHING?           └─ Legitimate
+        │                                  │
+        └──────────────┬───────────────────┘
+                       │
+        ┌──────────────┴──────────────────────┐
+        │  RESPONSE                           │
+        │  {                                  │
+        │    "is_phishing": bool,             │
+        │    "confidence": 95.5,              │
+        │    "risk_level": "HIGH",            │
+        │    "protection_type": "whitelist"   │
+        │  }                                  │
+        └──────────────┬──────────────────────┘
+                       │
+        ┌──────────────┴──────────────────────┐
+        │  Show Result to User                │
+        │  ├─ If PHISHING → Show warning     │
+        │  └─ If SAFE → Allow access        │
+        └─────────────────────────────────────┘
 
 ### Penjelasan
 Ketika pengguna mengklik sebuah link, browser extension akan menangkap URL dan mengirimkannya ke backend API. Sistem kemudian melakukan dua tahap pengecekan, yaitu melalui whitelist untuk domain terpercaya dan melalui model machine learning untuk URL lainnya. Hasil analisis dikirim kembali ke extension untuk ditampilkan kepada pengguna.
