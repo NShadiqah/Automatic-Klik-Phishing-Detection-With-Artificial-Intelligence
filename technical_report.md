@@ -1,434 +1,156 @@
-# 🛡️ Automatic Phishing Detection System
-
-Sistem otomatis untuk mendeteksi phishing URLs saat Anda mengklik link. **Tidak perlu copy-paste URL lagi!**
-
-## ✨ Fitur Utama
-
-### 🎯 3 Komponen Terintegrasi
-
-1. **Browser Extension** (Auto-detection)
-   - Deteksi otomatis setiap klik link
-   - Popup warning jika phishing
-   - Options: "Lanjut" atau "Balik"
-   - Tidak ada popup jika URL aman ✅
-
-2. **Backend API** (Flask)
-   - REST API di port 5001
-   - Menggunakan ML model yang sudah dilatih
-   - Response cepat (<500ms)
-   - Dukungan batch check
-
-3. **Desktop App** (System Tray)
-   - Minimize ke taskbar
-   - Toggle on/off detection
-   - Real-time statistics
-   - Dashboard monitoring
+---
+"LAPORAN TEKNIS: SISTEM DETEKSI PHISHING OTOMATIS BERBASIS AI"
 
 ---
 
-## 🚀 Instalasi Cepat
+# Automatic Phishing Detection with AI
 
-### Step 1: Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+## 1. Pendahuluan
+Phishing merupakan salah satu ancaman keamanan siber yang bertujuan mencuri informasi pengguna melalui website palsu. URL biasanya dibuat menyerupai situs asli sehingga sulit dibedakan oleh pengguna.
 
-### Step 2: Start Backend API
-```bash
-python backend_api/api.py
-```
-✅ Server siap di http://localhost:5001
-
-### Step 3: Load Browser Extension
-
-**Chrome:**
-```
-1. Buka chrome://extensions/
-2. Aktifkan "Developer mode" (top right)
-3. Klik "Load unpacked"
-4. Pilih folder: browser_extension/
-```
-
-**Firefox:**
-```
-1. Buka about:debugging#/runtime/this-firefox
-2. Klik "Load Temporary Add-on"
-3. Pilih file: manifest.json
-```
-
-### Step 4: (Optional) Run Desktop App
-```bash
-python desktop_app/desktop_app.py
-```
+Proyek ini mengembangkan sistem deteksi phishing otomatis berbasis machine learning yang mampu bekerja secara real-time melalui browser.
 
 ---
 
-## 📖 Cara Kerja
-
-### Flow Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                  User Clicks Link                            │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────────────────┐
-│         Content Script Intercept (content.js)               │
-│         - Detect link click                                 │
-│         - Extract URL                                       │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────────────────┐
-│         Send to Backend API (background.js)                 │
-│         POST http://localhost:5001/api/check-url            │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-                       ▼
-┌──────────────────────────────────────────────────────────────┐
-│       ML Model Decision (API: api.py)                        │
-│       - Extract 56 features                                 │
-│       - Random Forest prediction                            │
-│       - Get risk factors                                    │
-└──────────────────────┬──────────────────────────────────────┘
-                       │
-            ┌──────────┴──────────┐
-            │                     │
-            ▼                     ▼
-       PHISHING               SAFE
-            │                     │
-            ▼                     ▼
-    Popup Warning        Direct Navigate
-    - Title: 🚨           (No popup)
-    - Reasons             Navigate to URL
-    - Buttons:            Seamless UX
-      Lanjut/Balik
-```
+## 2. Rumusan Masalah
+Permasalahan yang ditemukan pada sistem sebelumnya:
+- Domain terpercaya sering salah terdeteksi sebagai phishing  
+- Dataset memiliki bias dan kesalahan label  
+- Akurasi model masih rendah (~85%)  
+- Tingkat false positive cukup tinggi  
 
 ---
 
-## 🎨 Visual Examples
-
-### Safe URL - No Popup
-```
-User clicks: https://github.com/user/repo
-      ↓
-Content Script checks
-      ↓
-Backend: is_phishing = FALSE
-      ↓
-✅ Direct navigate (no popup)
-```
-
-### Phishing URL - Popup Warning
-```
-User clicks: https://paypal-verify-secure.tk/login
-      ↓
-Content Script checks
-      ↓
-Backend: is_phishing = TRUE (confidence 92%)
-      ↓
-🚨 POPUP MUNCUL:
-┌─────────────────────────────────┐
-│ 🚨 Potensi Link Phishing!       │
-│                                 │
-│ URL terdeteksi berbahaya:       │
-│ confidence 92%                  │
-│ paypal-verify-secure.tk/login   │
-│                                 │
-│ Alasan:                         │
-│ • Menyamar sebagai paypal       │
-│ • TLD mencurigakan: .tk         │
-│ • Kata "verify" mencurigakan    │
-│                                 │
-│ [← Balik] [Lanjut >]            │
-└─────────────────────────────────┘
-```
+## 3. Tujuan
+Tujuan dari sistem ini:
+- Meningkatkan akurasi deteksi hingga sekitar 97%  
+- Mengurangi false positive  
+- Mendeteksi phishing secara real-time  
+- Menghasilkan sistem yang siap digunakan  
 
 ---
 
-## 📁 Struktur Folder
+## 4. Arsitektur Sistem
 
-```
-Automatic Klik Phising Detection With AI/
-│
-├── backend_api/
-│   └── api.py              # 🔧 Flask REST API
-│       ├── /health
-│       ├── /api/check-url  (POST)
-│       └── /api/batch-check (POST)
-│
-├── browser_extension/
-│   ├── manifest.json       # 📋 Chrome/Firefox config
-│   ├── background.js       # 🔌 Service worker
-│   ├── content.js          # 🎯 Link interceptor
-│   ├── popup.html          # 🖼️ Control panel
-│   └── popup.js            # ⚙️ Popup logic
-│
-├── desktop_app/
-│   └── desktop_app.py      # 🖥️ PyQt5 system tray app
-│
-├── setup.py                # ⚙️ Setup & configuration
-├── requirements.txt        # 📦 Python dependencies
-├── start.bat              # 🚀 Windows launcher
-├── start.sh               # 🚀 Unix launcher
-└── README.md              # 📖 This file
-```
+### Diagram Arsitektur Sistem
 
----
++---------------------+
+|        User         |
+|     (Browser)       |
++----------+----------+
+           |
+           v
++---------------------+
+| Browser Extension   |
+| - Deteksi klik      |
+| - Ambil URL         |
++----------+----------+
+           |
+           v
++---------------------+
+|     Backend API     |
+|  (Flask Server)     |
++----------+----------+
+           |
+      -----+-----
+      |         |
+      v         v
++-----------+  +----------------+
+| Whitelist |  |   ML Model     |
+| (Trusted) |  | (RandomForest) |
++-----+-----+  +--------+-------+
+      |                 |
+      ------+-----------
+            |
+            v
++---------------------+
+|  Result Processing  |
+|  SAFE / PHISHING    |
++----------+----------+
+           |
+           v
++---------------------+
+|   Browser Popup     |
+| Warning / Continue  |
++---------------------+
 
-## ⚙️ Configuration
-
-### Backend API Settings
-Edit `backend_api/api.py`:
-
-```python
-# Change API port
-app.run(debug=False, host='localhost', port=5001)
-
-# Add to whitelist (skip check)
-KNOWN_SAFE_DOMAINS = {
-    "google.com",
-    "custom-domain.com"  # Add your domain
-}
-```
-
-### Browser Extension Settings
-Edit `browser_extension/background.js`:
-
-```javascript
-const API_URL = 'http://localhost:5001/api/check-url';
-// Change if API on different machine/port
-```
-
-Edit `browser_extension/popup.html`:
-```html
-<!-- Customize warning message -->
-```
+### Penjelasan
+Ketika pengguna mengklik sebuah link, browser extension akan menangkap URL dan mengirimkannya ke backend API. Sistem kemudian melakukan dua tahap pengecekan, yaitu melalui whitelist untuk domain terpercaya dan melalui model machine learning untuk URL lainnya. Hasil analisis dikirim kembali ke extension untuk ditampilkan kepada pengguna.
 
 ---
 
-## 🔌 API Endpoints
-
-### 1. Health Check
-```
-GET /health
-Response: {"status": "online", "service": "Phishing Detection API"}
-```
-
-### 2. Check Single URL
-```
-POST /api/check-url
-Content-Type: application/json
-
-Request:
-{
-  "url": "https://example.com"
-}
-
-Response:
-{
-  "url": "https://example.com",
-  "is_phishing": false,
-  "confidence": 95.5,
-  "phish_prob": 4.5,
-  "safe_prob": 95.5,
-  "risk_level": "LOW",
-  "status": "safe",
-  "reasons": [
-    "✅ URL terlihat aman",
-    "✅ Menggunakan HTTPS",
-    "✅ Tidak mengandung karakter mencurigakan"
-  ]
-}
-```
-
-### 3. Batch Check (Max 20 URLs)
-```
-POST /api/batch-check
-Content-Type: application/json
-
-Request:
-{
-  "urls": [
-    "https://github.com",
-    "https://phishing-site.tk/login"
-  ]
-}
-
-Response:
-{
-  "results": [
-    {"url": "https://github.com", "is_phishing": false, "confidence": 95.5, "status": "safe"},
-    {"url": "https://phishing-site.tk/login", "is_phishing": true, "confidence": 89.2, "status": "phishing"}
-  ],
-  "total": 2
-}
-```
+## 5. Metodologi
+Tahapan pengembangan sistem:
+1. Pengumpulan dataset phishing dan legitimate  
+2. Pembersihan data (data cleaning)  
+3. Ekstraksi fitur dari URL  
+4. Pelatihan model machine learning  
+5. Integrasi dengan backend dan extension  
+6. Pengujian sistem  
 
 ---
 
-## 🎯 Usage Examples
+## 6. Dataset & Fitur
+Dataset terdiri dari 11.430 URL yang seimbang antara phishing dan legitimate.
 
-### Example 1: Google Link (Safe)
-```
-Web Page: Click on "Visit Google"
-Link: https://www.google.com
+Fitur yang digunakan meliputi:
+- Panjang URL  
+- Karakter khusus  
+- Struktur domain  
+- Subdomain dan TLD  
+- Kata kunci mencurigakan  
 
-Process:
-1. Extension intercept click
-2. Send to API: {url: "https://www.google.com"}
-3. Backend check: is_phishing = FALSE
-4. Response: navigate (no popup)
-5. Result: Go to google.com directly ✅
-```
-
-### Example 2: Malicious PayPal Link
-```
-Web Page: Click on "Verify Account"
-Link: http://paypal-secure-verify.tk/login?user=account
-
-Process:
-1. Extension intercept click
-2. Send to API: {url: "http://paypal-secure-verify.tk/login?user=account"}
-3. Backend check features:
-   - TLD .tk (suspicious)
-   - Subdomain "paypal-secure" (brand spoofing)
-   - Kata "verify" (phishing keyword)
-   - is_phishing = TRUE (confidence 92%)
-4. Response: Show warning popup
-5. User clicks "Balik" → go back safely ✅
-```
+Total fitur yang digunakan sebanyak 71 fitur.
 
 ---
 
-## 🛠️ Troubleshooting
+## 7. Model Machine Learning
+Model yang digunakan adalah Random Forest karena mampu menangani pola kompleks dan memberikan performa yang stabil.
 
-### Extension tidak bekerja
-
-**Problem:** Extension tidak mendeteksi link
-```
-Solution:
-1. ✅ Pastikan Backend API running:
-   python backend_api/api.py
-2. ✅ Check port 5001 available:
-   netstat -ano | findstr 5001
-3. ✅ Reload extension: F5 or reload button
-4. ✅ Check console: F12 → Console tab
-```
-
-### "Connection refused" Error
-```
-Solution:
-1. Backend belum di-start
-2. Port 5001 sudah terpakai
-3. Firewall block localhost
-
-Fix:
-- python backend_api/api.py
-- atau: python backend_api/api.py --port 5002
-```
-
-### Popup tidak muncul
-```
-Solution:
-1. ✅ Check is_phishing value dari API
-2. ✅ Pastikan confidence > threshold
-3. ✅ Check content.js di F12 Console
-
-Debug:
-- Add breakpoint di content.js
-- Check API response
-```
-
-### Desktop App crash
-```
-Solution:
-1. PyQt5 belum install:
-   pip install PyQt5
-2. Coba run langsung:
-   python desktop_app/desktop_app.py
-3. Check error message di console
-```
+Konfigurasi utama:
+- 400 decision trees  
+- Depth terbatas untuk menghindari overfitting  
+- Menggunakan probabilitas (calibration)  
 
 ---
 
-## 📊 Statistics & Monitoring
-
-### Desktop App Dashboard
-- Total URLs checked
-- Phishing detected
-- Safe URLs
-- Real-time status
-
-### View in Extension
-- Popup icon menunjukkan extension ON/OFF
-- Click untuk open control panel
+## 8. Hasil & Temuan
+Hasil pengujian menunjukkan:
+- Akurasi meningkat dari ~85% menjadi 97%  
+- False positive menurun menjadi sekitar 2.9%  
+- Domain terpercaya tidak lagi salah terdeteksi  
 
 ---
 
-## 🔐 Security & Privacy
+## 9. Analisis & Kesimpulan
+Kualitas dataset sangat berpengaruh terhadap performa model. Penggunaan whitelist membantu mengurangi kesalahan deteksi, dan kombinasi machine learning serta rule-based menghasilkan sistem yang lebih efektif.
 
-### ✅ Safe
-- ✓ Hanya local API (http://localhost:5001)
-- ✓ Model ML jalan lokal
-- ✓ No data sent ke external server
-- ✓ Browsing data private
-- ✓ Open source code
-
-### ⚠️ Limitations
-- ⚠ Model accuracy ~91% (bukan 100%)
-- ⚠ URL analysis saja (tidak check page content)
-- ⚠ False positives possible
-- ⚠ Butuh user judgment untuk URL samar
+Sistem berhasil mendeteksi phishing secara real-time dengan tingkat akurasi yang tinggi.
 
 ---
 
-## 🧪 Testing
-
-### Manual Test
-```
-1. Start Backend: python backend_api/api.py
-2. Load Extension
-3. Go to test website
-4. Click link → see result
-```
-
-### Curl Test
-```bash
-# Safe URL
-curl -X POST http://localhost:5001/api/check-url \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://google.com"}'
-
-# Phishing URL
-curl -X POST http://localhost:5001/api/check-url \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://paypal-secure.tk/login"}'
-```
+## 10. Rencana Pengembangan
+Pengembangan selanjutnya meliputi:
+- Analisis konten halaman website  
+- Pembaruan dataset secara berkala  
+- Peningkatan tampilan antarmuka  
+- Pengembangan versi mobile  
 
 ---
 
-## 📝 Notes
+## 11. Panduan Operasional
 
-- Extension bekerja di semua website
-- Popup hanya muncul jika phishing terdeteksi
-- Safe URLs tidak ada popup (seamless UX)
-- Desktop app optional (API dapat berjalan tanpa)
-- System memory ~50-150 MB
+Menjalankan backend:
+pip install -r requirements.txt  
+python backend_api/api.py  
 
----
-
-## 🤝 Contributing
-
-Issues/suggestions? Check:
-1. Console F12 untuk error
-2. Backend log output
-3. Extension manifest.json
+Mengaktifkan extension:
+1. Buka chrome://extensions/  
+2. Aktifkan Developer Mode  
+3. Klik "Load unpacked"  
+4. Pilih folder browser_extension  
 
 ---
 
-**Status:** ✅ Production Ready
-**Last Updated:** March 2026
-**Support:** Open Source
+## 12. Ringkasan
+Sistem ini menyediakan deteksi phishing otomatis berbasis AI yang bekerja secara real-time dan membantu meningkatkan keamanan pengguna saat mengakses internet.
