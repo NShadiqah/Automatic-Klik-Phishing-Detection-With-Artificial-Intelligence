@@ -32,52 +32,45 @@ Tujuan dari sistem ini:
 
 ## 4. Arsitektur Sistem
 
-### Diagram Arsitektur Sistem
+## Diagram Arsitektur Sistem
 
+<pre>
 [ USER / CLIENT ]
-| Browser / Desktop
-v
+   | Browser / Desktop
+   v
 [ BROWSER EXTENSION ]
-
-Detect click
-Extract URL
-Send to backend
-|
-v
+   - Detect click
+   - Extract URL
+   - Send to backend
+   |
+   v
 [ BACKEND API (Flask) ]
-http://localhost:5001
-
-|
-+------------------------+
-| |
-v v
-[ WHITELIST ] [ ML MODEL ]
-(Trusted) (RandomForest)
-| |
-+-----------+------------+
-|
-v
+   http://localhost:5001
+   |
+   +------------------------+
+   |                        |
+   v                        v
+[ WHITELIST ]         [ ML MODEL ]
+ (Trusted)            (RandomForest)
+   |                        |
+   +-----------+------------+
+               |
+               v
 [ RESULT ]
-SAFE / PHISHING
-|
-v
+ SAFE / PHISHING
+               |
+               v
 [ BROWSER POPUP ]
-Warning / Continue
-
+ Warning / Continue
+</pre>
 
 ### Penjelasan
 
-Diagram di atas menunjukkan alur kerja sistem deteksi phishing secara sederhana namun menyeluruh. Proses dimulai dari pengguna (user) yang mengakses sebuah link melalui browser atau aplikasi.
+Diagram di atas menunjukkan alur kerja sistem deteksi phishing secara sederhana. Proses dimulai dari pengguna yang mengakses link melalui browser. Ketika link diklik, browser extension akan mendeteksi dan mengambil URL, kemudian mengirimkannya ke backend API.
 
-Ketika pengguna mengklik link, browser extension akan secara otomatis mendeteksi aktivitas tersebut, mengambil URL, dan mengirimkannya ke backend API untuk diproses.
+Backend melakukan dua tahap pengecekan, yaitu melalui whitelist untuk domain terpercaya dan melalui model machine learning untuk URL lainnya. Jika URL termasuk dalam whitelist, maka langsung dianggap aman. Jika tidak, maka dianalisis menggunakan model Random Forest.
 
-Di sisi backend, sistem melakukan dua tahap pengecekan. Pertama, URL akan dibandingkan dengan daftar whitelist (domain terpercaya). Jika URL termasuk dalam whitelist, maka langsung dikategorikan sebagai aman (safe).
-
-Jika URL tidak ditemukan dalam whitelist, maka akan diproses oleh model machine learning (Random Forest). Model ini menganalisis berbagai fitur dari URL untuk menentukan apakah termasuk phishing atau legitimate.
-
-Hasil analisis kemudian dikembalikan dalam bentuk status (safe atau phishing). Informasi ini ditampilkan kepada pengguna melalui browser popup, berupa peringatan jika terdeteksi phishing atau akses normal jika URL aman.
-
-Dengan alur ini, sistem mampu memberikan perlindungan secara real-time tanpa memerlukan intervensi manual dari pengguna.
+Hasil analisis berupa status aman atau phishing dikirim kembali ke extension dan ditampilkan kepada pengguna melalui popup sebagai peringatan atau akses normal.
 
 ---
 
