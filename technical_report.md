@@ -34,45 +34,30 @@ Tujuan dari sistem ini:
 
 ### Diagram Arsitektur Sistem
 
-+---------------------+
-| User |
-| (Browser) |
-+----------+----------+
-|
-v
-+---------------------+
-| Browser Extension |
-| - Deteksi klik |
-| - Ambil URL |
-+----------+----------+
-|
-v
-+---------------------+
-| Backend API |
-| (Flask Server) |
-+----------+----------+
-|
------+-----
-| |
-v v
-+-----------+ +----------------+
-| Whitelist | | ML Model |
-| (Trusted) | | (RandomForest) |
-+-----+-----+ +--------+-------+
-| |
-------+-----------
-|
-v
-+---------------------+
-| Result Processing |
-| SAFE / PHISHING |
-+----------+----------+
-|
-v
-+---------------------+
-| Browser Popup |
-| Warning / Continue |
-+---------------------+
+    [ User (Browser) ]
+            |
+            v
+    [ Browser Extension ]
+      (Deteksi & Ambil URL)
+            |
+            v
+    [ Backend API (Flask) ]
+            |
+       --------------
+       |            |
+       v            v
+    [ Whitelist ]  [ ML Model ]
+     (Trusted)     (RandomForest)
+       |            |
+       ------+------
+              |
+              v
+    [ Result Processing ]
+       SAFE / PHISHING
+              |
+              v
+    [ Browser Popup ]
+     Warning / Continue
 
 ### Penjelasan
 Ketika pengguna mengklik sebuah link, browser extension akan menangkap URL dan mengirimkannya ke backend API. Sistem kemudian melakukan dua tahap pengecekan, yaitu melalui whitelist untuk domain terpercaya dan melalui model machine learning untuk URL lainnya. Hasil analisis dikirim kembali ke extension untuk ditampilkan kepada pengguna.
