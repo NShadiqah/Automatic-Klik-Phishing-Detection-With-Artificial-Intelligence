@@ -32,45 +32,90 @@ Tujuan dari sistem ini:
 
 ## 4. Arsitektur Sistem
 
-## Diagram Arsitektur Sistem
+### 4.1 System Architecture Diagram
 
-<pre>
-[ USER / CLIENT ]
-   | Browser / Desktop
-   v
-[ BROWSER EXTENSION ]
-   - Detect click
-   - Extract URL
-   - Send to backend
-   |
-   v
-[ BACKEND API (Flask) ]
-   http://localhost:5001
-   |
-   +------------------------+
-   |                        |
-   v                        v
-[ WHITELIST ]         [ ML MODEL ]
- (Trusted)            (RandomForest)
-   |                        |
-   +-----------+------------+
-               |
-               v
-[ RESULT ]
- SAFE / PHISHING
-               |
-               v
-[ BROWSER POPUP ]
- Warning / Continue
-</pre>
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     USER / CLIENT LAYER                         │
+│  ┌──────────────────┐    ┌──────────────────────────────────┐  │
+│  │ Browser User     │    │ Desktop Application              │  │
+│  │ (Chrome/Firefox) │    │ (System Tray Monitor)            │  │
+│  └────────┬─────────┘    └──────────────┬───────────────────┘  │
+└───────────┼─────────────────────────────┼────────────────────────┘
+            │                             │
+            ▼                             ▼
+    ┌───────────────────────────────────────────────────┐
+    │      BROWSER EXTENSION LAYER                      │
+    │  ┌─────────────────────────────────────────────┐  │
+    │  │  background.js (Event Listener)             │  │
+    │  │  - Detect link clicks                       │  │
+    │  │  - Extract URL                             │  │
+    │  │  - Send to backend                         │  │
+    │  └────────────────┬────────────────────────────┘  │
+    │                   │                              │
+    │  ┌────────────────┴───────────┐                  │
+    │  │ popup.js (UI Display)      │                  │
+    │  │ - Show warning/safe        │                  │
+    │  │ - Continue/Block options   │                  │
+    │  └────────────────────────────┘                  │
+    └──────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+        ┌──────────────────────────────────┐
+        │  BACKEND API (Flask)             │
+        │  http://localhost:5001           │
+        │  ┌──────────────────────────┐    │
+        │  │ POST /api/check-url      │    │
+        │  │ {url: "..."}             │    │
+        │  └────────────┬─────────────┘    │
+        │               │                  │
+        │  ┌────────────┴──────────────┐   │
+        │  ▼                           ▼   │
+        │ Layer 1:              Layer 2:   │
+        │ Check Whitelist         ML Model │
+        │ (118 domains)           (V3)     │
+        │ ├─ YES → SAFE          Extract   │
+        │ │ 99%                   71 features
+        │ └─ NO ↓                          │
+        │    Run Model 1           ├─ Phishing
+        │    → PHISHING?           └─ Legitimate
+        │                                  │
+        └──────────────┬───────────────────┘
+                       │
+        ┌──────────────┴──────────────────────┐
+        │  RESPONSE                           │
+        │  {                                  │
+        │    "is_phishing": bool,             │
+        │    "confidence": 95.5,              │
+        │    "risk_level": "HIGH",            │
+        │    "protection_type": "whitelist"   │
+        │  }                                  │
+        └──────────────┬──────────────────────┘
+                       │
+        ┌──────────────┴──────────────────────┐
+        │  Show Result to User                │
+        │  ├─ If PHISHING → Show warning     │
+        │  └─ If SAFE → Allow access        │
+        └─────────────────────────────────────┘
+```
 
 ### Penjelasan
 
-Diagram di atas menunjukkan alur kerja sistem deteksi phishing secara sederhana. Proses dimulai dari pengguna yang mengakses link melalui browser. Ketika link diklik, browser extension akan mendeteksi dan mengambil URL, kemudian mengirimkannya ke backend API.
+Diagram di atas menggambarkan arsitektur sistem deteksi phishing secara menyeluruh yang terdiri dari beberapa lapisan utama.
 
-Backend melakukan dua tahap pengecekan, yaitu melalui whitelist untuk domain terpercaya dan melalui model machine learning untuk URL lainnya. Jika URL termasuk dalam whitelist, maka langsung dianggap aman. Jika tidak, maka dianalisis menggunakan model Random Forest.
+Pada lapisan pertama, yaitu **User/Client Layer**, terdapat dua jenis pengguna, yaitu pengguna browser (Chrome/Firefox) dan aplikasi desktop (system tray). Keduanya berperan sebagai sumber input URL yang akan dianalisis oleh sistem.
 
-Hasil analisis berupa status aman atau phishing dikirim kembali ke extension dan ditampilkan kepada pengguna melalui popup sebagai peringatan atau akses normal.
+Selanjutnya, pada **Browser Extension Layer**, extension berfungsi sebagai komponen utama untuk mendeteksi aktivitas pengguna. File `background.js` bertugas sebagai event listener yang akan menangkap setiap klik link, mengekstrak URL, dan mengirimkannya ke backend API. Sementara itu, `popup.js` bertanggung jawab untuk menampilkan hasil analisis kepada pengguna dalam bentuk peringatan atau notifikasi aman, serta menyediakan opsi untuk melanjutkan atau membatalkan akses.
+
+Pada **Backend API Layer**, sistem berbasis Flask menerima request berupa URL melalui endpoint `/api/check-url`. Setelah itu, URL akan diproses melalui dua lapisan analisis.
+
+Lapisan pertama adalah **Whitelist Checking**, di mana sistem memeriksa apakah URL termasuk dalam daftar domain terpercaya (sekitar 118 domain). Jika URL ditemukan dalam whitelist, maka langsung dikategorikan sebagai aman dengan tingkat kepercayaan tinggi.
+
+Jika URL tidak termasuk dalam whitelist, maka akan diproses pada lapisan kedua yaitu **Machine Learning Model (V3)**. Pada tahap ini, sistem melakukan ekstraksi sekitar 71 fitur dari URL dan menggunakan model Random Forest untuk menentukan apakah URL tersebut termasuk phishing atau legitimate.
+
+Hasil dari proses ini dikembalikan dalam bentuk response yang berisi informasi seperti status phishing, tingkat kepercayaan (confidence), tingkat risiko (risk level), serta jenis proteksi yang digunakan.
+
+Terakhir, hasil analisis akan ditampilkan kembali kepada pengguna. Jika URL terdeteksi sebagai phishing, maka sistem akan menampilkan peringatan. Sebaliknya, jika URL dinyatakan aman, pengguna dapat melanjutkan akses tanpa hambatan.
 
 ---
 
