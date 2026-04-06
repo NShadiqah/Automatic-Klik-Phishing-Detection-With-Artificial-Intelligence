@@ -35,43 +35,43 @@ Tujuan dari sistem ini:
 ### Diagram Arsitektur Sistem
 
 +---------------------+
-|        User         |
-|     (Browser)       |
+| User |
+| (Browser) |
 +----------+----------+
-           |
-           v
+|
+v
 +---------------------+
-| Browser Extension   |
-| - Deteksi klik      |
-| - Ambil URL         |
+| Browser Extension |
+| - Deteksi klik |
+| - Ambil URL |
 +----------+----------+
-           |
-           v
+|
+v
 +---------------------+
-|     Backend API     |
-|  (Flask Server)     |
+| Backend API |
+| (Flask Server) |
 +----------+----------+
-           |
-      -----+-----
-      |         |
-      v         v
-+-----------+  +----------------+
-| Whitelist |  |   ML Model     |
-| (Trusted) |  | (RandomForest) |
-+-----+-----+  +--------+-------+
-      |                 |
-      ------+-----------
-            |
-            v
+|
+-----+-----
+| |
+v v
++-----------+ +----------------+
+| Whitelist | | ML Model |
+| (Trusted) | | (RandomForest) |
++-----+-----+ +--------+-------+
+| |
+------+-----------
+|
+v
 +---------------------+
-|  Result Processing  |
-|  SAFE / PHISHING    |
+| Result Processing |
+| SAFE / PHISHING |
 +----------+----------+
-           |
-           v
+|
+v
 +---------------------+
-|   Browser Popup     |
-| Warning / Continue  |
+| Browser Popup |
+| Warning / Continue |
 +---------------------+
 
 ### Penjelasan
